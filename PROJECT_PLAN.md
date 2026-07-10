@@ -21,29 +21,51 @@
 ## 一、資料來源：動物認領養 API
 
 **API 文件**：https://data.moa.gov.tw/api.aspx
-**Endpoint**：`http://data.moa.gov.tw/Service/OpenData/AnimalOpenData.aspx`
+**Endpoint**：`https://data.moa.gov.tw/api/v1/AnimalRecognition/`（實測確認，見下方 curl 範例；與早期文件記載的 `Service/OpenData/AnimalOpenData.aspx` 不同）
+
+```
+curl -X GET "https://data.moa.gov.tw/api/v1/AnimalRecognition/?%24top=1000&Page=1" -H "accept: application/json"
+```
+
+回應包在 `{ "Data": [...] }` 裡。
 
 ### 支援參數
 - `$top`：取得筆數
-- `$skip`：分頁位移
-- `$filter`：篩選條件，語法如 `animal_kind+like+貓`，可用 `+and+` 疊加多條件
+- `Page`：頁碼，**1-based，必填**（不是 `$skip` 位移）
+- 篩選：每個回傳欄位都可以直接當 query param 傳（如 `animal_kind=狗&animal_sex=F`），**不是**舊文件寫的 `$filter=field+like+value` OData 語法
 
-### 常見欄位
-| 欄位 | 說明 |
-|---|---|
-| `animal_kind` | 貓 / 狗 |
-| `animal_colour` | 花色 |
-| `animal_bodytype` | SMALL / MEDIUM / BIG |
-| `animal_sex` | 性別 |
-| `animal_sterilization` | 絕育狀態：N=未輸入 / F=否 / T=是 |
-| 照片網址 | 已統一為 https |
-| 收容所資訊 | 名稱、電話、地址 |
+### 完整欄位（來自官方 API 參數文件）
+| 欄位 | 說明 | 備註 |
+|---|---|---|
+| `animal_id` | 動物流水編號 | 回傳是 number，可當詳情頁 id |
+| `animal_subid` | 動物收容編號 | |
+| `animal_area_pkid` | 所屬縣市代碼 | 文件寫 string、實測回傳 number；**沒有代碼對照表**，縣市篩選功能延後 |
+| `animal_shelter_pkid` | 所屬收容所代碼 | 同上，型別不穩定 |
+| `animal_place` | 實際所在地 | |
+| `animal_kind` | 貓 / 狗 | |
+| `animal_sex` | 性別 | |
+| `animal_bodytype` | SMALL / MEDIUM / BIG | |
+| `animal_colour` | 花色 | |
+| `animal_age` | 年紀，如 `ADULT` | |
+| `animal_sterilization` | 絕育狀態：N=未輸入 / F=否 / T=是 | |
+| `animal_bacterin` | 是否施打狂犬病疫苗 | |
+| `animal_foundplace` | 尋獲地 | 可能是空字串 |
+| `animal_title` | 網頁標題 | |
+| `animal_status` | 動物狀態，如 `OPEN` | |
+| `animal_remark` | 資料備註 | |
+| `animal_caption` | 其他說明 | 可能是空字串 |
+| `animal_opendate` / `animal_closeddate` | 開放認養起訖 | 日期格式不統一（`2026-07-17` vs 無期限時是 `2999-12-31`） |
+| `animal_update` / `animal_createtime` | 異動／建立時間 | 格式也不統一（曾見 `2026/07/10`） |
+| `shelter_name` / `shelter_address` / `shelter_tel` | 收容所名稱、地址、電話 | |
+| `album_file` | 照片網址 | 已經是完整 `https://www.pet.gov.tw/upload/pic/xxx.png` URL，不用自己拼 |
+| `album_update` | 照片更新時間 | 可能是空字串 |
+| `cDate` | 資料建立時間 | |
 
 ### ⚠️ 資料特性（會直接影響設計）
 - **資料是動態的**：動物一旦被領養，該筆資料會直接從清單消失，**沒有「已認養」狀態欄位**，也**沒有領養日期欄位**。
 - 因此網站不適合做「歷史紀錄」或「已成功送養」頁面，因為資料源本身不保留這類資訊。
 - 資料**每日更新**。
-- API 本身是 `http`（非 `https`），且官方沒有明確 CORS 政策 → 需要後端代理層（見第四節）。
+- 實測 API 是 `https` 且回應帶 `access-control-allow-origin: *`，技術上前端可以直接呼叫，**但仍照 CLAUDE.md 決策走後端代理層**（理由是快取控制、篩選邏輯不外露、未來換資料庫好升級，不是技術上被逼的）。
 
 ---
 
@@ -92,31 +114,37 @@
 
 ## 四、API 代理層架構
 
-### 為什麼不能讓瀏覽器直接打政府 API
+### 為什麼還是走代理層（即使實測 API 是 https 且 CORS 開放）
 
-1. **CORS 風險**：政府開放資料平台不一定會回傳 `Access-Control-Allow-Origin`，瀏覽器跨網域請求可能被直接擋下（curl 測試正常，但瀏覽器環境會失敗）。
-2. **Mixed content 封鎖**：API 是 `http`，若網站部署在 `https`（如 Vercel），瀏覽器會封鎖從 https 頁面發出的 http 請求。**這個問題只能靠後端代理解決**，前端無論怎麼調整都沒用。
-3. **避免細節外露**：直接 client-side 呼叫的話，API 呼叫方式與篩選邏輯會完全暴露在瀏覽器 devtools 中。
+實測 `https://data.moa.gov.tw/api/v1/AnimalRecognition/` 回應帶 `access-control-allow-origin: *`，技術上瀏覽器可以直接呼叫，不會被 CORS 或 mixed content 擋下。但仍然決定走 `app/api/animals` 代理層，理由：
+
+1. **快取控制**：資料每日更新，代理層用 `next: { revalidate: 3600 }` 集中快取，避免每個使用者的每次篩選都直接打政府伺服器。
+2. **避免細節外露**：直接 client-side 呼叫的話，篩選邏輯與參數組合會完全暴露在瀏覽器 devtools 中。
+3. **未來好升級**：之後若要換成自己的資料庫（見下方），Route Handler 的抓取邏輯可以直接搬過去，前端完全不用改。
 
 ### Route Handler 實作
 
 ```typescript
 // app/api/animals/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { fetchAnimals } from '@/lib/animals';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const kind = searchParams.get('kind'); // 貓 or 狗
+  const bodytype = searchParams.get('bodytype');
+  const sex = searchParams.get('sex');
+  const sterilization = searchParams.get('sterilization');
   const top = searchParams.get('top') ?? '20';
-  const skip = searchParams.get('skip') ?? '0';
+  const page = searchParams.get('page') ?? '1';
 
-  let filter = '';
-  if (kind) filter = `animal_kind+like+${encodeURIComponent(kind)}`;
-
-  const apiUrl = new URL('http://data.moa.gov.tw/Service/OpenData/AnimalOpenData.aspx');
+  const apiUrl = new URL('https://data.moa.gov.tw/api/v1/AnimalRecognition/');
   apiUrl.searchParams.set('$top', top);
-  apiUrl.searchParams.set('$skip', skip);
-  if (filter) apiUrl.searchParams.set('$filter', filter);
+  apiUrl.searchParams.set('Page', page);
+  if (kind) apiUrl.searchParams.set('animal_kind', kind);
+  if (bodytype) apiUrl.searchParams.set('animal_bodytype', bodytype);
+  if (sex) apiUrl.searchParams.set('animal_sex', sex);
+  if (sterilization) apiUrl.searchParams.set('animal_sterilization', sterilization);
 
   const res = await fetch(apiUrl.toString(), {
     next: { revalidate: 3600 }, // 快取 1 小時
@@ -126,12 +154,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch' }, { status: 502 });
   }
 
-  const data = await res.json();
-  return NextResponse.json(data);
+  const animals = parseAnimalList(await res.json()); // zod safeParse，過濾髒資料
+  return NextResponse.json({ data: animals });
 }
 ```
 
-前端只需要打自己的 `/api/animals?kind=貓`，不需碰原始政府 API 網址與語法。
+前端只需要打自己的 `/api/animals?kind=貓`，不需碰原始政府 API 網址與語法。**分頁用 `page`（1-based），不是 `skip`** — 因為上游本身就是 `Page` 參數，沒必要多包一層轉換。
 
 ### 快取（`revalidate`）的用意
 
@@ -143,7 +171,7 @@ export async function GET(request: NextRequest) {
 
 1. **篩選參數組合過多會降低快取命中率**：若篩選維度很多（種類 × 體型 × 性別 × 縣市），
    可考慮改成「固定抓全部資料（如 `$top=1000`）並快取」，篩選邏輯自己在程式碼裡處理，而不是每種組合各打一次外部 API。
-2. **`$skip`/`$top` 分頁與快取搭配**：翻頁到新的頁面時第一次仍需真的打一次外部 API，屬正常現象。
+2. **`page`/`top` 分頁與快取搭配**：翻頁到新的頁面時第一次仍需真的打一次外部 API，屬正常現象。
 3. **未來可平滑升級為資料庫架構**：若之後想加排程（如 Vercel Cron）把資料存進自己的資料庫，
    Route Handler 的抓取邏輯可以直接搬過去，不用重寫。
 4. **錯誤處理不能省**：政府開放資料平台穩定性有限，Route Handler 需要 try/catch + timeout，
