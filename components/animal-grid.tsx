@@ -18,6 +18,7 @@ export function AnimalGrid({
   const [animals, setAnimals] = useState(initialAnimals);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const offsetRef = useRef(initialAnimals.length);
   const loadingRef = useRef(false);
   const hasMoreRef = useRef(initialHasMore);
@@ -27,6 +28,7 @@ export function AnimalGrid({
     if (loadingRef.current || !hasMoreRef.current) return;
     loadingRef.current = true;
     setLoading(true);
+    setError(false);
 
     const params = new URLSearchParams();
     if (filters.kind) params.set("kind", filters.kind);
@@ -36,15 +38,22 @@ export function AnimalGrid({
     params.set("offset", String(offsetRef.current));
     params.set("limit", String(BATCH_SIZE));
 
-    const res = await fetch(`/api/animals?${params.toString()}`);
-    const json: { data: Animal[]; hasMore: boolean } = await res.json();
+    try {
+      const res = await fetch(`/api/animals?${params.toString()}`);
+      if (!res.ok) throw new Error(`API responded ${res.status}`);
+      const json: { data: Animal[]; hasMore: boolean } = await res.json();
 
-    offsetRef.current += json.data.length;
-    hasMoreRef.current = json.hasMore;
-    setAnimals((prev) => [...prev, ...json.data]);
-    setHasMore(json.hasMore);
-    loadingRef.current = false;
-    setLoading(false);
+      offsetRef.current += json.data.length;
+      hasMoreRef.current = json.hasMore;
+      setAnimals((prev) => [...prev, ...json.data]);
+      setHasMore(json.hasMore);
+    } catch {
+      // ponytail: leave hasMoreRef untouched so scrolling away and back retries
+      setError(true);
+    } finally {
+      loadingRef.current = false;
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -74,6 +83,11 @@ export function AnimalGrid({
       <div ref={sentinelRef} className="h-1" />
       {loading ? (
         <p className="py-4 text-center text-sm text-muted-foreground">載入中…</p>
+      ) : null}
+      {error ? (
+        <p className="py-4 text-center text-sm text-muted-foreground">
+          載入更多動物失敗，往下滑動再試一次。
+        </p>
       ) : null}
       {!hasMore ? (
         <p className="py-8 text-center text-sm text-muted-foreground">

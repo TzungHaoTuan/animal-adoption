@@ -1,4 +1,4 @@
-import { fetchAnimals, type AnimalFilters } from "@/lib/animals";
+import { fetchAnimals, type Animal, type AnimalFilters } from "@/lib/animals";
 import { AnimalGrid } from "@/components/animal-grid";
 import { FilterBar } from "@/components/filter-bar";
 
@@ -23,7 +23,14 @@ export default async function Home({
     sterilization: toFilterValue(params.sterilization),
   };
 
-  const { items, hasMore } = await fetchAnimals(filters, { limit: INITIAL_BATCH });
+  let items: Animal[] = [];
+  let hasMore = false;
+  let fetchFailed = false;
+  try {
+    ({ items, hasMore } = await fetchAnimals(filters, { limit: INITIAL_BATCH }));
+  } catch {
+    fetchFailed = true;
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
@@ -38,7 +45,11 @@ export default async function Home({
 
       <FilterBar currentFilters={filters} />
 
-      {items.length === 0 ? (
+      {fetchFailed ? (
+        <p className="py-16 text-center text-muted-foreground">
+          資料讀取失敗，請稍後再試一次。
+        </p>
+      ) : items.length === 0 ? (
         <p className="py-16 text-center text-muted-foreground">
           目前沒有符合篩選條件的動物，換個條件試試看。
         </p>

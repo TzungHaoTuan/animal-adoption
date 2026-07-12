@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json({ data: items, hasMore });
-  } catch {
+  } catch (err) {
+    console.error("Failed to fetch animals:", err);
     return NextResponse.json({ error: "Failed to fetch animals" }, { status: 502 });
   }
 }
