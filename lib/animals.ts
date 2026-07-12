@@ -41,18 +41,16 @@ export type AnimalFilters = {
   sterilization?: string;
 };
 
-export async function fetchAnimals(
-  filters: AnimalFilters,
-  { top = 20, page = 1 }: { top?: number; page?: number } = {}
-): Promise<Animal[]> {
+// ponytail: anonymous MOA access refuses Page>1 ("非會員只限回傳第一頁資料")
+// and $top caps at 1000, so 1000 is the real ceiling of reachable data —
+// fetch it once (cached) and filter/paginate locally instead of asking
+// upstream for pages it won't give. Upgrade when a member API key exists.
+const MAX_FETCHABLE = 1000;
+
+async function fetchAllAnimalsRaw(): Promise<Animal[]> {
   const apiUrl = new URL("https://data.moa.gov.tw/api/v1/AnimalRecognition/");
-  apiUrl.searchParams.set("$top", String(top));
-  apiUrl.searchParams.set("Page", String(page));
-  if (filters.kind) apiUrl.searchParams.set("animal_kind", filters.kind);
-  if (filters.bodytype) apiUrl.searchParams.set("animal_bodytype", filters.bodytype);
-  if (filters.sex) apiUrl.searchParams.set("animal_sex", filters.sex);
-  if (filters.sterilization)
-    apiUrl.searchParams.set("animal_sterilization", filters.sterilization);
+  apiUrl.searchParams.set("$top", String(MAX_FETCHABLE));
+  apiUrl.searchParams.set("Page", "1");
 
   const res = await fetch(apiUrl.toString(), {
     next: { revalidate: 3600 },
@@ -63,4 +61,26 @@ export async function fetchAnimals(
   }
 
   return parseAnimalList(await res.json());
+}
+
+function matchesFilters(animal: Animal, filters: AnimalFilters): boolean {
+  if (filters.kind && animal.animal_kind !== filters.kind) return false;
+  if (filters.bodytype && animal.animal_bodytype !== filters.bodytype) return false;
+  if (filters.sex && animal.animal_sex !== filters.sex) return false;
+  if (filters.sterilization && animal.animal_sterilization !== filters.sterilization)
+    return false;
+  return true;
+}
+
+export async function fetchAnimals(
+  filters: AnimalFilters,
+  { offset = 0, limit = 12 }: { offset?: number; limit?: number } = {}
+): Promise<{ items: Animal[]; hasMore: boolean }> {
+  const all = await fetchAllAnimalsRaw();
+  const filtered = all.filter((animal) => matchesFilters(animal, filters));
+
+  return {
+    items: filtered.slice(offset, offset + limit),
+    hasMore: offset + limit < filtered.length,
+  };
 }

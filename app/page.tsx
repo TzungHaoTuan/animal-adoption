@@ -1,6 +1,8 @@
 import { fetchAnimals, type AnimalFilters } from "@/lib/animals";
-import { AnimalCard } from "@/components/animal-card";
+import { AnimalGrid } from "@/components/animal-grid";
 import { FilterBar } from "@/components/filter-bar";
+
+const INITIAL_BATCH = 12; // ponytail: fixed guess aligned to xl:grid-cols-4 x 3 rows, SSR can't know real viewport
 
 type SearchParams = { [key: string]: string | string[] | undefined };
 
@@ -21,7 +23,7 @@ export default async function Home({
     sterilization: toFilterValue(params.sterilization),
   };
 
-  const animals = await fetchAnimals(filters, { top: 24 });
+  const { items, hasMore } = await fetchAnimals(filters, { limit: INITIAL_BATCH });
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
@@ -36,18 +38,17 @@ export default async function Home({
 
       <FilterBar currentFilters={filters} />
 
-      {animals.length === 0 ? (
+      {items.length === 0 ? (
         <p className="py-16 text-center text-muted-foreground">
           目前沒有符合篩選條件的動物，換個條件試試看。
         </p>
       ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {animals.map((animal) => (
-            <li key={animal.animal_id}>
-              <AnimalCard animal={animal} />
-            </li>
-          ))}
-        </ul>
+        <AnimalGrid
+          key={JSON.stringify(filters)}
+          initialAnimals={items}
+          initialHasMore={hasMore}
+          filters={filters}
+        />
       )}
     </div>
   );
