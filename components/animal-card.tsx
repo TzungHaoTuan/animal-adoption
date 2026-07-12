@@ -1,3 +1,4 @@
+"use client";
 import Image from "next/image";
 import type { Animal } from "@/lib/animals";
 
@@ -7,7 +8,13 @@ const BODYTYPE_LABEL: Record<string, string> = {
   BIG: "大型",
 };
 
-export function AnimalCard({ animal }: { animal: Animal }) {
+export function AnimalCard({
+  animal,
+  priority = false,
+}: {
+  animal: Animal;
+  priority?: boolean;
+}) {
   return (
     <div className="flex flex-col overflow-hidden rounded-lg border border-border bg-card">
       <div className="relative aspect-square bg-muted">
@@ -18,6 +25,7 @@ export function AnimalCard({ animal }: { animal: Animal }) {
             fill
             className="object-cover"
             sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
+            priority={priority}
           />
         ) : null}
       </div>
