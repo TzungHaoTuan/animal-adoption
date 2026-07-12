@@ -30,7 +30,8 @@ export function parseAnimalList(raw: unknown): Animal[] {
 
   return envelope.data.Data.map((item) => animalSchema.safeParse(item))
     .filter((result) => result.success)
-    .map((result) => result.data);
+    .map((result) => result.data)
+    .filter((animal) => animal.album_file !== ""); // ponytail: no-photo listings dropped for now, revisit priority later
 }
 
 export type AnimalFilters = {
