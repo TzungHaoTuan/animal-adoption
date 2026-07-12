@@ -66,6 +66,7 @@ curl -X GET "https://data.moa.gov.tw/api/v1/AnimalRecognition/?%24top=1000&Page=
 - 因此網站不適合做「歷史紀錄」或「已成功送養」頁面，因為資料源本身不保留這類資訊。
 - 資料**每日更新**。
 - 實測 API 是 `https` 且回應帶 `access-control-allow-origin: *`，技術上前端可以直接呼叫，**但仍照 CLAUDE.md 決策走後端代理層**（理由是快取控制、篩選邏輯不外露、未來換資料庫好升級，不是技術上被逼的）。
+- **非會員分頁上限（實測確認）**：`Page=2`（不論 `$top` 多大）一律回 `{"RS":"ERROR","MSG":"非會員只限回傳第一頁資料"}`；`$top` 單次最多 1000，且 `$top=1000` 時 `Next` 仍是 `true`，代表全國實際筆數超過 1000。結論：非會員能拿到的資料上限固定是「`$top=1000&Page=1`」這 1000 筆，`Page` 分頁機制對匿名存取無用。架構決策見下方第四節。
 
 ---
 
@@ -74,7 +75,7 @@ curl -X GET "https://data.moa.gov.tw/api/v1/AnimalRecognition/?%24top=1000&Page=
 ### 首頁（列表頁）
 - 卡片網格：照片、種類、花色、體型、所在收容所、大概地區
 - 篩選列：貓/狗、體型、性別、絕育狀態、縣市
-- 分頁或無限捲動（利用 `$top` / `$skip`）
+- **無限捲動**（IntersectionObserver 偵測底部 sentinel，滾到底再抓下一批；不做「載入更多」按鈕，也不做 windowing/virtualization——理由與實作方式見第四節）
 - Empty state：篩選過嚴無結果、或資料剛好被領養完的情況都要處理
 
 ### 動物詳情頁
@@ -169,13 +170,27 @@ export async function GET(request: NextRequest) {
 
 ### 需要注意的坑
 
-1. **篩選參數組合過多會降低快取命中率**：若篩選維度很多（種類 × 體型 × 性別 × 縣市），
-   可考慮改成「固定抓全部資料（如 `$top=1000`）並快取」，篩選邏輯自己在程式碼裡處理，而不是每種組合各打一次外部 API。
-2. **`page`/`top` 分頁與快取搭配**：翻頁到新的頁面時第一次仍需真的打一次外部 API，屬正常現象。
+1. ~~篩選參數組合過多會降低快取命中率~~ → **已定案（見下方「無限捲動與分頁架構」）**：不再是「可考慮」，而是實測發現非會員 `Page` 分頁根本不可用後的必要設計——固定 `$top=1000&Page=1` 抓一次並快取，篩選/分頁邏輯全部在程式碼裡對這份陣列處理。
+2. ~~`page`/`top` 分頁與快取搭配~~ → 不適用了。改用 `offset`/`limit` 對本地陣列做 slice，不再對外部 API 分頁。
 3. **未來可平滑升級為資料庫架構**：若之後想加排程（如 Vercel Cron）把資料存進自己的資料庫，
    Route Handler 的抓取邏輯可以直接搬過去，不用重寫。
 4. **錯誤處理不能省**：政府開放資料平台穩定性有限，Route Handler 需要 try/catch + timeout，
    前端也要有合理的 loading / error 狀態。
+
+### 無限捲動與分頁架構（實測 Page 限制後定案）
+
+實測發現非會員 `Page=2` 一律被拒（`{"RS":"ERROR","MSG":"非會員只限回傳第一頁資料"}`），`$top` 上限 1000，且 `$top=1000` 時 `Next` 仍為 `true`（全國筆數 > 1000）。這代表：
+- 不管怎麼組參數，非會員能碰到的資料上限就是「`$top=1000&Page=1`」這 1000 筆，`Page` 分頁對我們無用。
+- 這 1000 筆**不是全部資料**，冷門的種類/縣市篩選結果可能樣本很少甚至掛零，不等於「全國目前真實可認養數量」。之後若有會員 API key 解除上限，這是最值得升級的點。
+
+架構決定：
+1. **`lib/animals.ts`**：`fetchAllAnimalsRaw()` 不帶任何篩選、`$top=1000&Page=1`，吃 `revalidate:3600` 快取——不管使用者切換什麼篩選條件，upstream 只會打這一種 URL，快取命中率遠高於「每種篩選組合各自一條快取」的舊設計。`fetchAnimals(filters, { offset, limit })` 在這份陣列上做 `.filter()` + `.slice()`，回傳 `{ items, hasMore }`。
+2. **`app/api/animals/route.ts`**：參數從 `top`/`page` 改成 `offset`/`limit`，內部呼叫 `fetchAnimals` 做本地分頁，回傳 `{ data, hasMore }`。
+3. **首頁**：SSR 先抓固定筆數（對齊 `xl:grid-cols-4` 抓 3 排 = 12 筆左右）當首批，不做「依 viewport 動態決定首批筆數」——SSR 階段拿不到 client 尺寸，做了只是徒增複雜度。
+4. **`AnimalGrid`（新增 client component）**：接手首批資料 + `hasMore`，用 `IntersectionObserver` 偵測底部 sentinel，滾到底時打 `/api/animals?...&offset=...&limit=...` 抓下一批、append 進畫面。篩選條件變更時（`FilterBar` 用 `router.push` 換 URL）靠 `key={JSON.stringify(filters)}` 強制整個元件重新掛載、重置捲動狀態。
+5. **不做 windowing/virtualization**（如 react-window）：清單是篩選後的子集，DOM 負擔到不了需要 virtualization 的量級，`next/image` 本身也只 lazy-load 可視範圍外的圖片。
+
+明確捨棄「載入更多」按鈕方案——使用者已表態要 infinite scroll。
 
 ---
 
