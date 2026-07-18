@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimalCard } from "@/components/animal-card";
-import type { Animal, AnimalFilters } from "@/lib/animals";
+import { filtersToSearchParams, type Animal, type AnimalFilters } from "@/lib/animals";
 
 const BATCH_SIZE = 12;
 
@@ -30,11 +30,7 @@ export function AnimalGrid({
     setLoading(true);
     setError(false);
 
-    const params = new URLSearchParams();
-    if (filters.kind) params.set("kind", filters.kind);
-    if (filters.bodytype) params.set("bodytype", filters.bodytype);
-    if (filters.sex) params.set("sex", filters.sex);
-    if (filters.sterilization) params.set("sterilization", filters.sterilization);
+    const params = filtersToSearchParams(filters);
     params.set("offset", String(offsetRef.current));
     params.set("limit", String(BATCH_SIZE));
 
@@ -76,7 +72,7 @@ export function AnimalGrid({
       <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {animals.map((animal, index) => (
           <li key={animal.animal_id}>
-            <AnimalCard animal={animal} priority={index < 4} />
+            <AnimalCard animal={animal} preload={index < 4} />
           </li>
         ))}
       </ul>
