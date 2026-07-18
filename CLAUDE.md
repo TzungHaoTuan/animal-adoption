@@ -13,6 +13,12 @@
 - 資料每日更新，代理層快取 `revalidate: 3600` 是刻意設計，不要縮短
 - `animal_area_pkid`（縣市篩選用的代碼）目前沒有代碼對照表，縣市篩選功能先跳過，等拿到對照表或能實測到足夠資料再補
 
+## 收容所地圖資料源（/shelters）
+- Endpoint：`https://data.moa.gov.tw/Service/OpenData/TransService.aspx?UnitId=2thVboChxuKs`，回傳 bare array（不是 `{Data:[...]}` 包裝），共 33 筆，欄位：`ID`/`ShelterName`/`CityName`/`Address`/`Phone`/`OpenTime`/`Url`（永遠是空字串，無照片）/`Lat`/`Lon`/`Seq`。
+- **已內建經緯度**，不需要 geocode（不用 Nominatim、不用 Google Geocoding API），地圖圖磚與互動直接用 Leaflet + react-leaflet + OpenStreetMap 圖磚，不需要任何地圖 API key。
+- 這份收容所名冊的 `ShelterName` 跟 `AnimalRecognition` API 的 `shelter_name` **對不上**（實測例：`彰化縣流浪狗中途之家臨時收容所` vs `彰化縣流浪狗中途之家`；`南投縣公立動物收容所` vs `公立南投動物收容所` 詞序不同）→ 兩份資料**不做關聯**，地圖頁不顯示動物數量、不連結動物清單、不比對動物照片。
+- 資料筆數固定 33 筆、無分頁疑慮，SSR 一次抓（`revalidate:3600`，比照動物資料）、交給 client 端在記憶體裡依 `CityName` 篩選即可，不需要 `/api/shelters` route。
+
 ## 篩選狀態
 - 篩選條件（種類/體型/性別/絕育，縣市待補）存在 URL query params，不要只放 React state，需支援分享連結與瀏覽器上一頁
 

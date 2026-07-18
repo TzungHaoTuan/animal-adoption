@@ -82,8 +82,15 @@ curl -X GET "https://data.moa.gov.tw/api/v1/AnimalRecognition/?%24top=1000&Page=
 - 大圖 + 基本資料 + 收容所聯絡資訊（電話、地址，加 Google Maps 外部連結）
 - 提醒文案：「此資料每日更新，若已被認養則會自動下架」
 
-### 收容所／地圖頁（加分項）
-- 依收容所分群，或用地圖標記全台收容所分布
+### 收容所地圖頁（`/shelters`）
+資料源：`https://data.moa.gov.tw/Service/OpenData/TransService.aspx?UnitId=2thVboChxuKs`（33 筆收容所名冊，含經緯度，見 CLAUDE.md「收容所地圖資料源」一節）。
+
+- 左側：Leaflet + OpenStreetMap 地圖，33 個收容所 pin（自畫 `divIcon`，不用預設圖示，避開 bundler 打包路徑壞掉的坑）。
+- 右側面板：頂部縣市下拉選單（依 `CityName`，沿用 `lib/taiwan-counties.ts` 的排序）；下方視目前選取狀態顯示「收容所清單」或「單一收容所詳情」。
+- 點擊清單項目或地圖 pin 都會切換到詳情：名稱、地址、電話、開放時間、圖示佔位圖（此資料源無照片欄位，不做跨資料集比對動物照片）、「在 Google 地圖開啟 ↗」連結（用經緯度組 `https://www.google.com/maps/search/?api=1&query=lat,lon`，新分頁開啟）、「← 返回清單」按鈕。
+- Zoom 規則：未選取收容所（初始 / 切縣市 / 返回清單）一律 `fitBounds` 目前篩選出的 pin（`maxZoom:11` 避免單一收容所縣市過度放大）；選取收容所後固定 `flyTo(zoom 14)`。初始畫面刻意 `fitBounds` 全部 33 筆（含金門、連江），不做「只框本島」的寫死視角。
+- 不需要 `/api/shelters` route：33 筆固定資料，SSR 一次抓 + client 端記憶體篩選即可。
+- 不做 marker clustering（33 個 pin 用不到）。
 
 ### 收藏／關注（加分項）
 - 用 `localStorage` 存收藏清單即可，MVP 階段不需要帳號系統
