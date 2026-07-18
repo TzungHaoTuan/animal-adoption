@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchAnimals } from "@/lib/animals";
+import { fetchAnimals, filtersFromSearchParams } from "@/lib/animals";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -9,12 +9,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const { items, hasMore } = await fetchAnimals(
-      {
-        kind: searchParams.get("kind") ?? undefined,
-        bodytype: searchParams.get("bodytype") ?? undefined,
-        sex: searchParams.get("sex") ?? undefined,
-        sterilization: searchParams.get("sterilization") ?? undefined,
-      },
+      filtersFromSearchParams(searchParams),
       { offset, limit }
     );
 
