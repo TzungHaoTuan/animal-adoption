@@ -2,12 +2,17 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+const NAV_LINKS = [
+  { href: "/animals", label: "認養清單", key: "animals" },
+  { href: "/shelters", label: "收容所地圖", key: "shelters" },
+] as const;
+
 export function SiteHeader({
   variant = "default",
-  active = false,
+  current,
 }: {
   variant?: "default" | "detail";
-  active?: boolean;
+  current?: "animals" | "shelters";
 }) {
   return (
     <header className="flex items-center justify-between border-b border-border bg-background px-6 py-4">
@@ -23,12 +28,19 @@ export function SiteHeader({
           ← 返回清單
         </Link>
       ) : (
-        <Link
-          href="/animals"
-          className={cn(buttonVariants({ variant: active ? "secondary" : "ghost" }))}
-        >
-          認養清單
-        </Link>
+        <nav className="flex items-center gap-1">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.key}
+              href={link.href}
+              className={cn(
+                buttonVariants({ variant: current === link.key ? "secondary" : "ghost" }),
+              )}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
       )}
     </header>
   );
