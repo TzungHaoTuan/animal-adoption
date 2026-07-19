@@ -99,24 +99,7 @@ curl -X GET "https://data.moa.gov.tw/api/v1/AnimalRecognition/?%24top=1000&Page=
 
 ## 三、Design System 策略
 
-**結論：不使用 Claude Design，直接用 shadcn/ui 建立輕量 design system。**
-
-理由：
-1. Claude Design 的核心價值是「團隊協作 + 交接給其他工程師」，對一人 side project 是多餘的流程開銷。
-2. Claude Design 跑在 Opus 4.7 上，較耗用量額度，且是獨立的研究預覽產品。
-3. shadcn/ui 本身就是把元件原始碼生成到專案裡（`components/ui/`），基於 CSS variables 做 theming，
-   已經解決「樣式一致性」的需求，且完全活在程式碼裡、零轉換成本。
-
-### 實作順序
-1. **shadcn CLI init**：選定色系（建議暖色系如橘/杏色，適合寵物網站），建立 `globals.css` 的 CSS variables（`--primary`、`--radius`、`--muted` 等）作為 design system 雛形
-2. **定義 theme tokens**：主色、dark mode 對應色，全站元件統一吃這套變數
-3. **建立自訂複合元件**：`AnimalCard`、`FilterBar`、`AnimalDetailSheet` 等 domain 專屬元件
-
-### GSAP 動效規劃
-- 列表卡片進場：`gsap.from` + stagger
-- 篩選切換：fade / scale transition
-- 詳情頁圖片：hover scale 或輕微 parallax
-- Next.js 中須注意：使用 `useGSAP`（`@gsap/react`）+ `useRef`，且需在 client component 中使用（加 `"use client"`），避免 SSR 階段操作不存在的 DOM
+設計系統（配色、字體、token 結構、元件樣式規範、GSAP 未來規劃）已抽離至 [DESIGN.md](DESIGN.md)，修改設計前先讀它。
 
 ---
 

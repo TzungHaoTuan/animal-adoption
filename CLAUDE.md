@@ -31,7 +31,7 @@
 - 動物照片來自政府網域，`next.config.js` 的 `images.remotePatterns` 必須白名單該網域，否則 `next/image` 會擋圖
 
 ## Design System
-- 用 shadcn/ui，不用 Claude Design（team-collaboration 開銷對個人 side project 不划算，見 PROJECT_PLAN.md 第三節）
+- 設計相關（配色/字體/元件樣式規範）見 [DESIGN.md](DESIGN.md)，**修改任何設計前先讀它**
 
 ## 詳細規劃
 完整規劃、待辦事項與優先順序見 [PROJECT_PLAN.md](PROJECT_PLAN.md)
