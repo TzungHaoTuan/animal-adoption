@@ -3,8 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AnimalPhoto } from "@/components/animal-photo";
 import { Card } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
+import { OpenInMapsLink } from "@/components/open-in-maps-link";
 import { fetchAnimalDetail, getSummaryLine, type Animal } from "@/lib/animals";
 import { AvatarBadge } from "@/components/avatar-badge";
 import { Cat, Dog, Mars, Venus, MapPin, Phone } from "lucide-react";
@@ -33,7 +33,6 @@ export default async function AnimalDetailPage({
   }
   if (!result) notFound();
   const { animal, recommendations } = result;
-  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(animal.shelter_address)}`;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -74,7 +73,7 @@ export default async function AnimalDetailPage({
           />
 
           <InfoCard animal={animal} />
-          <ShelterCard animal={animal} mapUrl={mapUrl} />
+          <ShelterCard animal={animal} />
         </div>
       </div>
     </div>
@@ -130,7 +129,7 @@ function InfoCard({ animal }: { animal: Animal }) {
   );
 }
 
-function ShelterCard({ animal, mapUrl }: { animal: Animal; mapUrl: string }) {
+function ShelterCard({ animal }: { animal: Animal }) {
   return (
     <Card className="gap-3 p-4">
       <h2 className="text-sm font-bold text-foreground">我在這裡</h2>
@@ -145,14 +144,9 @@ function ShelterCard({ animal, mapUrl }: { animal: Animal; mapUrl: string }) {
           <p>{animal.shelter_tel}</p>
         </div>
       </div>
-      <a
-        href={mapUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={buttonVariants({ variant: "secondary" })}
-      >
-        在 Google 地圖上開啟 ↗
-      </a>
+      <OpenInMapsLink
+        query={`${animal.shelter_name} ${animal.shelter_address}`}
+      />
     </Card>
   );
 }
