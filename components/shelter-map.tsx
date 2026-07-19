@@ -57,7 +57,7 @@ export function ShelterMap({ shelters }: { shelters: Shelter[] }) {
 
   return (
     <div className="grid flex-1 gap-4 lg:grid-cols-[1fr_360px]">
-      <div className="h-100 overflow-hidden rounded-2xl bg-muted lg:h-[70vh]">
+      <div className="h-100 overflow-hidden rounded-3xl bg-muted lg:h-[70vh]">
         <ShelterMapLeaflet
           shelters={filteredShelters}
           selectedId={selectedId}
@@ -123,7 +123,7 @@ export function ShelterMap({ shelters }: { shelters: Shelter[] }) {
 function ShelterDetail({ shelter }: { shelter: Shelter }) {
   return (
     <Card className="gap-3 p-4">
-      <h2 className="text-base font-bold text-foreground">
+      <h2 className="text-lg font-semibold text-foreground">
         {shelter.ShelterName}
       </h2>
 

@@ -40,7 +40,7 @@ export default async function AnimalDetailPage({
 
       <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[600px_1fr]">
         <div className="flex flex-col gap-6">
-          <div className="relative flex-center h-105 overflow-hidden rounded-2xl bg-muted">
+          <div className="relative flex-center h-105 overflow-hidden rounded-3xl bg-muted">
             <AnimalPhoto
               src={animal.album_file}
               kind={animal.animal_kind}
@@ -54,7 +54,7 @@ export default async function AnimalDetailPage({
 
           {recommendations.length > 0 ? (
             <div>
-              <h2 className="mb-3 text-base font-bold text-foreground">
+              <h2 className="mb-3 text-lg font-semibold text-foreground">
                 你可能也會喜歡
               </h2>
               <div className="grid grid-cols-3 gap-3">
@@ -111,7 +111,7 @@ function InfoCard({ animal }: { animal: Animal }) {
 
   return (
     <Card className="gap-3 p-4">
-      <h2 className="text-sm font-bold text-foreground">關於我</h2>
+      <h2 className="text-lg font-semibold text-foreground">關於我</h2>
       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
         {rows.map((row) => (
           <div key={row.label}>
@@ -132,7 +132,7 @@ function InfoCard({ animal }: { animal: Animal }) {
 function ShelterCard({ animal }: { animal: Animal }) {
   return (
     <Card className="gap-3 p-4">
-      <h2 className="text-sm font-bold text-foreground">我在這裡</h2>
+      <h2 className="text-lg font-semibold text-foreground">我在這裡</h2>
       <div className="flex flex-col gap-1 text-sm text-muted-foreground">
         <p className="font-medium text-foreground">{animal.shelter_name}</p>
         <div className="flex items-center gap-1">

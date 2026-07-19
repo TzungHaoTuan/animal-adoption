@@ -58,7 +58,7 @@ export function AnimalCard({
   return (
     <div className="flex flex-col gap-2">
       <Link href={`/animals/${animal.animal_id}`}>
-        <Card className="overflow-hidden py-0 w-full h-60">
+        <Card className="overflow-hidden py-0 w-full h-60 transition hover:-translate-y-0.5 hover:shadow-md">
           <div className="relative flex justify-center items-center h-full bg-muted">
             <AnimalPhoto
               src={animal.album_file}
