@@ -1,4 +1,4 @@
-# 毛孩之家 Animal Adoption
+# Animal Adoption
 
 > A Next.js 16 (App Router) front-end side project that surfaces Taiwan's official government open-data animal adoption API through a card-based browsing experience — with an API proxy/caching layer, URL-synced filters, infinite scroll, and an interactive shelter map.
 
@@ -33,7 +33,7 @@
 | 地圖      | Leaflet + react-leaflet + OpenStreetMap（無需 API key） |
 | Lint      | ESLint                                                  |
 
-## 架構亮點（值得一提的技術決策）
+## 架構（技術決策）
 
 - **API 代理層而非直連**：外部 API 實測 CORS 開放，前端技術上可直接呼叫，但仍統一走 `app/api/animals` 代理——集中快取控制、篩選邏輯不暴露在 devtools、未來要換自建資料庫時前端零改動。
 - **應對「非會員分頁鎖死」的架構調整**：實測發現外部 API 非會員只能拿到 `Page=1` 的資料（`$top` 上限 1000 筆），官方分頁機制對匿名存取無用。因此改為代理層一次抓滿 1000 筆做 1 小時快取，所有篩選與無限捲動的分頁位移都在程式碼裡對這份陣列做 `.filter()` + `.slice()`，讓不同篩選組合共用同一份上游快取，而不是各自打一次外部 API。
