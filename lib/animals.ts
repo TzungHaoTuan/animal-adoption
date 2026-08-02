@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { fetchShelters } from "./shelters";
 
 const animalSchema = z.object({
   animal_id: z.coerce.number(),
@@ -44,6 +45,7 @@ export type AnimalFilters = {
   bodytype?: string;
   sterilization?: string;
   bacterin?: string;
+  county?: string;
   shelter?: string;
 };
 
@@ -54,6 +56,7 @@ const FILTER_KEYS = [
   "bodytype",
   "sterilization",
   "bacterin",
+  "county",
   "shelter",
 ] as const;
 
@@ -121,6 +124,8 @@ function matchesFilters(animal: Animal, filters: AnimalFilters): boolean {
     return false;
   if (!matchesYesNoFilter(filters.bacterin, animal.animal_bacterin))
     return false;
+  if (filters.county && countyOf(animal.shelter_name) !== filters.county)
+    return false;
   if (filters.shelter && animal.shelter_name !== filters.shelter) return false;
   return true;
 }
@@ -156,10 +161,8 @@ const AGE_LABEL: Record<string, string> = {
 
 /** Only used for the detail-page title — list cards show real fields only, no fabricated names. */
 export function getDisplayName(animal: Animal): string {
-  if (animal.animal_title) return animal.animal_title;
-  if (animal.animal_subid)
-    return `${animal.animal_kind}・#${animal.animal_subid}`;
-  return `${animal.animal_kind}・#${animal.animal_id}`;
+  if (animal.animal_subid) return `${animal.animal_subid}`;
+  return `${animal.animal_id}`;
 }
 
 export function getSummaryLine(animal: Animal): string {
@@ -177,6 +180,31 @@ export async function fetchShelterNames(): Promise<string[]> {
   ).sort();
 }
 
+// Taiwanese county/city names are always exactly 3 characters (e.g. 臺北市,
+// 新北市, 宜蘭縣), and every shelter_name in this dataset starts with one —
+// confirmed against live data rather than assumed.
+export function countyOf(shelterName: string) {
+  return shelterName.slice(0, 3);
+}
+
+/** Homepage stats — same cached dataset as everything else, just aggregated differently. */
+export async function fetchHomeStats(): Promise<{
+  total: number;
+  catCount: number;
+  dogCount: number;
+  shelterCount: number;
+}> {
+  const all = await fetchAllAnimalsRaw();
+  const shelters = await fetchShelters();
+
+  return {
+    total: all.length,
+    catCount: all.filter((a) => a.animal_kind === "貓").length,
+    dogCount: all.filter((a) => a.animal_kind === "狗").length,
+    shelterCount: shelters.length,
+  };
+}
+
 export async function fetchAnimalDetail(
   id: number,
 ): Promise<{ animal: Animal; recommendations: Animal[] } | null> {
@@ -184,14 +212,21 @@ export async function fetchAnimalDetail(
   const animal = all.find((a) => a.animal_id === id);
   if (!animal) return null;
 
-  const recommendations = all
-    .filter(
-      (a) =>
-        a.animal_id !== id &&
-        a.animal_kind === animal.animal_kind &&
-        a.animal_colour === animal.animal_colour,
-    )
-    .slice(0, 3);
+  const sameKind = all.filter(
+    (a) => a.animal_id !== id && a.animal_kind === animal.animal_kind,
+  );
+  const sameColour = animal.animal_colour
+    ? sameKind.filter((a) => a.animal_colour === animal.animal_colour)
+    : [];
+
+  // ponytail: fall back to same-kind fill when colour match is missing/thin, dedup by animal_id
+  const recommendations =
+    sameColour.length >= 6
+      ? sameColour.slice(0, 6)
+      : [
+          ...sameColour,
+          ...sameKind.filter((a) => !sameColour.includes(a)),
+        ].slice(0, 6);
 
   return { animal, recommendations };
 }
