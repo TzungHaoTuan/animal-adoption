@@ -119,7 +119,7 @@ export function ShelterMap({ shelters }: { shelters: Shelter[] }) {
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ")
-                    setSelectedId(shelter.ID);
+                    handleShelterClick(shelter.ID);
                 }}
                 className={cn(
                   "cursor-pointer gap-1 p-3 transition-colors",

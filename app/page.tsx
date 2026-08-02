@@ -7,7 +7,7 @@ import { MoveUp, MoveRight, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default async function Home() {
-  const stats = await fetchHomeStats();
+  const stats = await fetchHomeStats().catch(() => null);
 
   return (
     <div className="flex flex-1 flex-col">
