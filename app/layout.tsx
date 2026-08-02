@@ -1,20 +1,26 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Quicksand, Noto_Sans_TC, Nunito } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const quicksand = Quicksand({
+  variable: "--font-quicksand",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const notoSansTC = Noto_Sans_TC({
+  variable: "--font-noto-sans-tc",
+  weight: ["400", "500", "700"],
+  subsets: ["latin"],
+});
+
+const nunito = Nunito({
+  variable: "--font-nunito",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "動物認領養",
-  description: "串接農業部動物認領養開放資料的認養資訊網站",
+  title: "貓狗認領養",
+  description: "串接農業部動物認領養開放資料的貓狗認養資訊網站",
 };
 
 export default function RootLayout({
@@ -24,8 +30,8 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang="zh-Hant"
+      className={`${quicksand.variable} ${notoSansTC.variable} ${nunito.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

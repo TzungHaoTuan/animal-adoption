@@ -6,11 +6,10 @@ import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
 const FALLBACK_SRC: Record<string, string> = {
-  貓: "/images/cat_vector_avatar.svg",
-  狗: "/images/dog_vector_avatar.svg",
+  貓: "/images/cat_looks_outside.webp",
+  狗: "/images/dog_looks_outside.webp",
 };
 
-/** Shared fallback for missing `album_file` AND upstream fetch/decode failures (gov photo host is flaky). */
 export function AnimalPhoto({
   src,
   alt,
@@ -20,18 +19,16 @@ export function AnimalPhoto({
 }: Omit<ImageProps, "src"> & { src: string; kind: string }) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
-  const fallback = FALLBACK_SRC[kind] ?? FALLBACK_SRC["狗"];
-  const showReal = Boolean(src) && !errored;
+  const fallbackImage = FALLBACK_SRC[kind] ?? FALLBACK_SRC["狗"];
+  const hasPhoto = Boolean(src) && !errored;
 
   return (
     <>
-      {!showReal ? (
-        <Image src={fallback} alt={alt} width={60} height={60} />
-      ) : null}
-      {showReal ? (
+      {hasPhoto ? (
         <Image
           src={src}
           alt={alt}
+          fill
           className={cn(
             className,
             "transition-all duration-1000 ease-out",
@@ -41,8 +38,16 @@ export function AnimalPhoto({
           onError={() => setErrored(true)}
           {...props}
         />
-      ) : null}
-      {showReal && !loaded ? (
+      ) : (
+        <Image
+          src={fallbackImage}
+          alt={alt}
+          fill
+          className={cn(className, "opacity-20 blur-xs brightness-150")}
+          {...props}
+        />
+      )}
+      {hasPhoto && !loaded ? (
         <div className="absolute inset-0 flex items-center justify-center bg-black/10">
           <Spinner className="size-6 text-white" />
         </div>
