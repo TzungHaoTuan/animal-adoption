@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# shadcn agent skills (CLI-vendored docs, regenerate via the shadcn skill installer)
+/.agents/
+skills-lock.json

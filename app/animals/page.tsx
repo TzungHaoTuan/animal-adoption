@@ -29,6 +29,7 @@ export default async function AnimalsPage({
     bodytype: toFilterValue(params.bodytype),
     sterilization: toFilterValue(params.sterilization),
     bacterin: toFilterValue(params.bacterin),
+    county: toFilterValue(params.county),
     shelter: toFilterValue(params.shelter),
   };
 
@@ -47,14 +48,17 @@ export default async function AnimalsPage({
 
   return (
     <div className="flex flex-1 flex-col">
-      <SiteHeader current="animals" />
+      <div className="sticky top-0 z-50">
+        <div className="bg-background">
+          <SiteHeader />
+          <div className="mx-auto w-full max-w-6xl px-4 sm:px-0">
+            <FilterBar currentFilters={filters} shelterNames={shelterNames} />
+          </div>
+        </div>
+        <div className="h-6 bg-linear-to-b from-background to-transparent" />
+      </div>
 
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-        <FilterBar currentFilters={filters} shelterNames={shelterNames} />
-        <p className="text-sm text-muted-foreground">
-          串接農業部認領養開放資料，資料每日更新。
-        </p>
-
+      <div className="mx-auto px-4 flex w-full max-w-6xl flex-1 flex-col gap-6 pb-20">
         {fetchFailed ? (
           <p className="py-16 text-center text-muted-foreground">
             資料讀取失敗，請稍後再試一次。

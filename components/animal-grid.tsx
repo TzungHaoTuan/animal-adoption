@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimalCard } from "@/components/animal-card";
-import { filtersToSearchParams, type Animal, type AnimalFilters } from "@/lib/animals";
+import {
+  filtersToSearchParams,
+  type Animal,
+  type AnimalFilters,
+} from "@/lib/animals";
 
 const BATCH_SIZE = 12;
 
@@ -60,7 +64,7 @@ export function AnimalGrid({
       (entries) => {
         if (entries[0].isIntersecting) void loadMore();
       },
-      { rootMargin: "400px" }
+      { rootMargin: "400px" },
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
@@ -69,7 +73,7 @@ export function AnimalGrid({
 
   return (
     <>
-      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <ul className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-6 ">
         {animals.map((animal, index) => (
           <li key={animal.animal_id}>
             <AnimalCard animal={animal} preload={index < 4} />
@@ -78,15 +82,21 @@ export function AnimalGrid({
       </ul>
       <div ref={sentinelRef} className="h-1" />
       {loading ? (
-        <p className="py-4 text-center text-sm text-muted-foreground">載入中…</p>
-      ) : null}
-      {error ? (
         <p className="py-4 text-center text-sm text-muted-foreground">
-          載入更多動物失敗，往下滑動再試一次。
+          載入中…
         </p>
       ) : null}
+      {error ? (
+        <button
+          type="button"
+          onClick={loadMore}
+          className="w-full py-4 text-center text-sm text-muted-foreground underline"
+        >
+          載入更多動物失敗，點此再試一次
+        </button>
+      ) : null}
       {!hasMore ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">
+        <p className="mt-auto text-center text-sm text-muted-foreground">
           已顯示全部符合條件的動物
         </p>
       ) : null}

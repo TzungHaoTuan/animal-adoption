@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
         hostname: "www.pet.gov.tw",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "asms.coa.gov.tw",
+        pathname: "/**",
+      },
     ],
   },
 };
