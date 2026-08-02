@@ -12,10 +12,10 @@ export default async function SheltersPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
-      <SiteHeader current="shelters" />
+    <div className="flex h-screen flex-col">
+      <SiteHeader />
 
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-8 sm:px-6">
+      <div className="mx-auto flex w-full sm:w-6xl h-[calc(100vh-76px)] flex-col gap-4 px-4 py-8 sm:px-6">
         <p className="text-sm text-muted-foreground">
           全台公立動物收容所地圖，資料每日更新。
         </p>
