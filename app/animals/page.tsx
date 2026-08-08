@@ -21,7 +21,11 @@ function toFilterValue(value: string | string[] | undefined) {
 
 async function FilterBarSection({ filters }: { filters: AnimalFilters }) {
   let shelterNames: string[] = [];
-  shelterNames = await fetchShelterNames();
+  try {
+    shelterNames = await fetchShelterNames();
+  } catch {
+    // degrade gracefully: filter bar still renders, just without shelter options
+  }
   return <FilterBar currentFilters={filters} shelterNames={shelterNames} />;
 }
 
@@ -52,12 +56,17 @@ async function AnimalGridSection({ filters }: { filters: AnimalFilters }) {
     );
   }
   return (
-    <AnimalGrid
-      key={JSON.stringify(filters)}
-      initialAnimals={items}
-      initialHasMore={hasMore}
-      filters={filters}
-    />
+    <>
+      <AnimalGrid
+        key={JSON.stringify(filters)}
+        initialAnimals={items}
+        initialHasMore={hasMore}
+        filters={filters}
+      />
+      <p className="text-center text-xs text-muted-foreground">
+        資料每日更新，若動物已被認養將自動從清單移除
+      </p>
+    </>
   );
 }
 
@@ -99,9 +108,6 @@ export default async function AnimalsPage({
         >
           <AnimalGridSection filters={filters} />
         </Suspense>
-        <p className="text-center text-xs text-muted-foreground">
-          資料每日更新，若動物已被認養將自動從清單移除
-        </p>
       </div>
     </div>
   );
