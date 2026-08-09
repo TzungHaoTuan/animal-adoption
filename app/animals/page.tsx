@@ -106,10 +106,7 @@ export default async function AnimalsPage({
 
         <div className="mx-auto px-4 flex w-full max-w-6xl flex-1 flex-col gap-6 pb-20">
           <AnimalGridPending>
-            <Suspense
-              key={JSON.stringify(filters)}
-              fallback={<AnimalGridSkeleton />}
-            >
+            <Suspense fallback={<AnimalGridSkeleton />}>
               <AnimalGridSection filters={filters} />
             </Suspense>
           </AnimalGridPending>
