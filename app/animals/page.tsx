@@ -6,9 +6,11 @@ import {
   type AnimalFilters,
 } from "@/lib/animals";
 import { AnimalGrid } from "@/components/animal-grid";
+import { AnimalGridPending } from "@/components/animal-grid-pending";
 import { AnimalGridSkeleton } from "@/components/animal-grid-skeleton";
 import { FilterBar } from "@/components/filter-bar";
 import { FilterBarSkeleton } from "@/components/filter-bar-skeleton";
+import { FilterTransitionProvider } from "@/components/filter-transition";
 import { SiteHeader } from "@/components/site-header";
 
 const INITIAL_BATCH = 12; // ponytail: fixed guess aligned to xl:grid-cols-4 x 3 rows, SSR can't know real viewport
@@ -88,27 +90,31 @@ export default async function AnimalsPage({
   };
 
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="sticky top-0 z-50">
-        <div className="bg-background">
-          <SiteHeader />
-          <div className="mx-auto w-full max-w-6xl px-4 sm:px-0">
-            <Suspense fallback={<FilterBarSkeleton />}>
-              <FilterBarSection filters={filters} />
-            </Suspense>
+    <FilterTransitionProvider>
+      <div className="flex flex-1 flex-col">
+        <div className="sticky top-0 z-50">
+          <div className="bg-background">
+            <SiteHeader />
+            <div className="mx-auto w-full max-w-6xl px-4 sm:px-0">
+              <Suspense fallback={<FilterBarSkeleton />}>
+                <FilterBarSection filters={filters} />
+              </Suspense>
+            </div>
           </div>
+          <div className="h-6 bg-linear-to-b from-background to-transparent" />
         </div>
-        <div className="h-6 bg-linear-to-b from-background to-transparent" />
-      </div>
 
-      <div className="mx-auto px-4 flex w-full max-w-6xl flex-1 flex-col gap-6 pb-20">
-        <Suspense
-          key={JSON.stringify(filters)}
-          fallback={<AnimalGridSkeleton />}
-        >
-          <AnimalGridSection filters={filters} />
-        </Suspense>
+        <div className="mx-auto px-4 flex w-full max-w-6xl flex-1 flex-col gap-6 pb-20">
+          <AnimalGridPending>
+            <Suspense
+              key={JSON.stringify(filters)}
+              fallback={<AnimalGridSkeleton />}
+            >
+              <AnimalGridSection filters={filters} />
+            </Suspense>
+          </AnimalGridPending>
+        </div>
       </div>
-    </div>
+    </FilterTransitionProvider>
   );
 }

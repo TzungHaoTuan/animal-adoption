@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useOptimistic, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useFilterTransition } from "@/components/filter-transition";
 import {
   Select,
   SelectContent,
@@ -100,16 +101,30 @@ export function FilterBar({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { startTransition } = useFilterTransition();
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const county = currentFilters.county || ALL;
+  // currentFilters only updates once the server round-trip (including the
+  // animal grid refetch) commits; optimistic state lets the toggles flip
+  // the instant they're clicked instead of waiting on that whole transition.
+  const [filters, setOptimisticFilters] = useOptimistic(
+    currentFilters,
+    (prev, patch: Partial<Record<FilterKey, string | null>>) => {
+      const next = { ...prev };
+      for (const [key, value] of Object.entries(patch)) {
+        next[key as FilterKey] = value || undefined;
+      }
+      return next;
+    },
+  );
+  const county = filters.county || ALL;
 
   const advancedActiveCount = [
-    currentFilters.age,
-    currentFilters.bodytype,
-    currentFilters.sterilization,
-    currentFilters.bacterin,
-    currentFilters.county,
-    currentFilters.shelter,
+    filters.age,
+    filters.bodytype,
+    filters.sterilization,
+    filters.bacterin,
+    filters.county,
+    filters.shelter,
   ].filter(Boolean).length;
 
   const countyOptions: Option[] = [
@@ -135,7 +150,10 @@ export function FilterBar({
         params.delete(key);
       }
     }
-    router.push(`${pathname}?${params.toString()}`);
+    startTransition(() => {
+      setOptimisticFilters(patch);
+      router.push(`${pathname}?${params.toString()}`);
+    });
   }
 
   function updateFilter(key: FilterKey, value: string | null) {
@@ -149,11 +167,16 @@ export function FilterBar({
   }
 
   const hasAnyFilter = Boolean(
-    currentFilters.kind || currentFilters.sex || advancedActiveCount > 0,
+    filters.kind || filters.sex || advancedActiveCount > 0,
   );
 
   function handleReset() {
-    router.push(pathname);
+    startTransition(() => {
+      setOptimisticFilters(
+        Object.fromEntries(Object.keys(filters).map((key) => [key, ""])),
+      );
+      router.push(pathname);
+    });
   }
 
   return (
@@ -162,8 +185,9 @@ export function FilterBar({
         <ToggleGroup
           className="w-full sm:w-[calc(270px-10px)]"
           aria-label="種類"
-          value={[currentFilters.kind || ALL]}
+          value={[filters.kind || ALL]}
           onValueChange={(value) =>
+            value[0] &&
             updateFilter("kind", value[0] === ALL ? "" : value[0])
           }
         >
@@ -179,8 +203,9 @@ export function FilterBar({
         <ToggleGroup
           className="w-full sm:w-[calc(270px-10px)]"
           aria-label="性別"
-          value={[currentFilters.sex || ALL]}
+          value={[filters.sex || ALL]}
           onValueChange={(value) =>
+            value[0] &&
             updateFilter("sex", value[0] === ALL ? "" : value[0])
           }
         >
@@ -222,7 +247,7 @@ export function FilterBar({
           <div>
             <FilterSelect
               label="年齡"
-              value={currentFilters.age || ALL}
+              value={filters.age || ALL}
               options={AGE_OPTIONS}
               onChange={(value) =>
                 updateFilter("age", value === ALL ? "" : value)
@@ -232,7 +257,7 @@ export function FilterBar({
           <div>
             <FilterSelect
               label="體型"
-              value={currentFilters.bodytype || ALL}
+              value={filters.bodytype || ALL}
               options={BODYTYPE_OPTIONS}
               onChange={(value) =>
                 updateFilter("bodytype", value === ALL ? "" : value)
@@ -242,7 +267,7 @@ export function FilterBar({
           <div>
             <FilterSelect
               label="絕育狀態"
-              value={currentFilters.sterilization || ALL}
+              value={filters.sterilization || ALL}
               options={STERILIZATION_OPTIONS}
               onChange={(value) =>
                 updateFilter("sterilization", value === ALL ? "" : value)
@@ -252,7 +277,7 @@ export function FilterBar({
           <div>
             <FilterSelect
               label="疫苗施打"
-              value={currentFilters.bacterin || ALL}
+              value={filters.bacterin || ALL}
               options={BACTERIN_OPTIONS}
               onChange={(value) =>
                 updateFilter("bacterin", value === ALL ? "" : value)
@@ -270,7 +295,7 @@ export function FilterBar({
           <div>
             <FilterSelect
               label="收容所"
-              value={currentFilters.shelter || ALL}
+              value={filters.shelter || ALL}
               options={shelterOptions}
               onChange={(value) =>
                 updateFilter("shelter", value === ALL ? "" : value)
