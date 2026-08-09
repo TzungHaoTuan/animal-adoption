@@ -26,6 +26,7 @@ export function SiteHeader() {
         {isDetail ? (
           <Link
             href="/animals"
+            prefetch={true}
             className="rounded-full bg-card px-4.5 py-2 text-sm font-bold shadow-header-chip"
           >
             ← 返回清單
@@ -36,6 +37,7 @@ export function SiteHeader() {
               <Link
                 key={link.key}
                 href={link.href}
+                prefetch={true}
                 className={cn(
                   "rounded-full px-5 py-2 text-sm font-semibold transition-colors",
                   pathname.startsWith(link.href)
